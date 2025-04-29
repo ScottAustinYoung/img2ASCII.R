@@ -1,0 +1,20 @@
+Package: img2ASCII
+Type: Package
+Title: Converts an image to ASCII art.
+Version: 0.0.0.9000
+Authors@R: c(
+    person(
+      "Scott", "Young",
+      email = "scottaustinyoung@gmail.com",
+      role = c("aut", "cre")
+    )
+  )
+Description: A simple package that converts an image to ASCII art. Import the
+  package, then call the function and your chosen image. Then, write your new
+    image filename for ASCII art. It will generate both a .txt file and an
+      image based on your file.
+Depends: false
+Imports: false
+License: CC0
+Encoding: UTF-8
+LazyData: true

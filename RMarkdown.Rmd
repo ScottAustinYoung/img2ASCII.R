@@ -1,0 +1,298 @@
+---
+title: "img2ASCII.R Shiny Application Code"
+author: "Scott Young"
+date: "2025-04-29" # Updated Date
+output:
+  html_document:
+    toc: true # Add table of contents for easier navigation
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+
+# Introduction
+
+This document provides a detailed explanation of the R code contained within the `img2ASCII.R` file. This script creates a Shiny web application that converts uploaded images (JPEG or PNG) into ASCII art. We will walk through each section: package management, UI definition, server logic (including image processing, ASCII generation, display, and download), and finally, the application launch command.
+
+```{r setup, include=FALSE, echo=TRUE, eval=FALSE}
+# Load libraries potentially used in the explanations or code context
+# These are the libraries loaded by the app itself.
+# library(shiny)
+# library(jpeg)
+# library(png)
+# library(tools)
+```
+## 1. Package Management
+This first section of the script ensures that all necessary R packages are installed and loaded.
+  - Purpose: To automatically handle package dependencies, installing them if missing and loading them into the R session.
+  - Mechanism: It defines a list of packages. Then iterating through the list, the function checks if each package is installed using 'requiredNamespace'. If a package is not found, it's installed using 'install.packages'.
+```{r}
+# --- Package Management Code ---
+# required_packages <- c(
+#  "shiny", # Core package for building web applications
+#  "jpeg",  # For reading JPEG image files
+#  "png"    # For reading PNG image files
+# )
+#
+# Loop through the list of required packages.
+# for (pkg in required_packages) {
+#  # Check if the package is already installed.
+#  if (!requireNamespace(pkg, quietly = TRUE)) {
+#    # If not installed, print a message and install it.
+#    message(paste("Installing package:", pkg))
+#    install.packages(pkg)
+#  }
+#  # Load the package into the current session.
+#  library(pkg, character.only = TRUE)
+#  message(paste("Package loaded:", pkg))
+# }
+```
+## 2. User Interface Definition
+The 'ui' object defines the structure and appearance of the web application's front-end using ShinyApp's UI functions.
+### 2.1 'fluidPage'
+  - Purpose: Creates the main container for the UI, providing a responsive layout that adjusts to different screen sizes.
+```{r}
+# ui <- fluidPage(
+#  # ... other UI elements go inside here
+# )
+```
+### 2.2 'titlePanel'
+  - Purpose: Displays the main title of the application at the top of the page.
+```{r}
+# Placed inside fluidPage()
+#  titlePanel("ASCII Image Converter")
+```
+### 2.3 'sidebarLayout'
+  - Purpose: Defines a common page structure with a sidebar and a main panel.
+```{r}
+# Placed inside fluidPage()
+#  sidebarLayout(
+    # sidebarPanel(...)
+    # mainPanel(...)
+#  )
+```
+### 2.4 'sidebarPanel'
+ - Purpose: Defines the content of the sidebar. In this app, it holds all the user input controls.
+```{r}
+# Placed inside sidebarLayout()
+#    sidebarPanel(
+      # ... input elements go inside here
+#    )
+```
+### 2.5 Input Elements Inside 'sidebarPanel'
+  - 'fileInput': Allows the user to upload a file. It's configured to accept only JPEG and PNG image types. The id 'image' is used to access the uploaded file in the server logic.
+  - 'numericInput': Provides a field for the user to enter a number, setting the maximum desired witdth for the generated ASCII art. Includes minimum, maxmimum, and default values.
+  - 'sliderInput': Creates a slider control allowing the user to adjust the font size for the preview of the ASCII art in the main panel output.
+  - 'selectInput': Generates a dropdown menu for the user to choose the desired format for downloading the output as an image type.
+  - 'downloadButton': Creates a button that when clicked initiates the download process defined in the server logic associated with 'downloadFile'
+```{r}
+# Placed inside sidebarPanel()
+#      fileInput("image", "Choose a .jpg or .png Image",
+#                accept = c(".jpg", ".jpeg", ".png"))
+#      numericInput("max_width", "Maximum Width (characters)",
+#                   min = 10, max = 300, value = 80)
+#      sliderInput("fontsize", "Preview Font Size (px)",
+#                  min = 4, max = 20, value = 10)
+#      selectInput("save_format", "Save as:",
+#                  choices = c("Text (.txt)", "Image (.png)", "Image (.jpeg)"))
+#      downloadButton("downloadFile", "Download")
+```
+### 2.6 'mainPanel'
+ - Purpose: Defines the content of the main area of the page. In this ShinyApp, it displays the generated ASCII art.
+```{r}
+# Placed inside sidebarLayout()
+#    mainPanel(
+      # ... output elements go inside here
+#    )
+```
+### 2.7 Output Element within mainPanel
+ - 'htmlOutput': Reserves a space within the UI where HTML content is generated dynamically by the server logic associated with 'output$ascii_display'.
+```{r}
+# Placed inside mainPanel()
+#      htmlOutput("ascii_display")
+```
+## 3. Server Logic
+The 'server' function contains the instructions for the application's backend. It takes input from the UI and generates output back to the UI.
+```{r}
+# server <- function(input, output, session) { # session is implicitly available
+  # ... server logic goes here
+#}
+```
+### 3.1 Reactive Values
+ - Purpose: 'reactiveVal()' creates reactive values, which are special objects used to store data that can change over time. When their value is updated, any reactive expressions or outputs that depend on them are automatically notified to re-execute.
+ - Usage:
+  - img_data <- reactiveVal(): Stores the raw pixel data of the currently loaded image.
+  - orig_dims <- reactiveVal(): Stores the original height and width of the loaded image.
+```{r}
+# Reactive values to store changing state
+#  img_data <- reactiveVal() # Stores the raw image data
+#  orig_dims <- reactiveVal() # Stores the original image dimensions
+```
+### 3.2 Image Loading
+ - Purpose: 'observeEvent' defines a block of code that executes only when the value of 'input$image' changes.
+ - Logic:
+  1. Checks if a file has been uploaded.
+  2. Determines the file extension.
+  3. Uses a switch statement to call the appropriate reading function based on the extension type.
+  4. Updates the 'img_data()' and 'orig_dims()' reactive values with the loaded image data and its dimensions.
+```{r}
+# Observer: Triggers when a new image is uploaded
+#  observeEvent(input$image, {
+#    req(input$image) # Ensure file is present
+#    ext <- tolower(tools::file_ext(input$image$datapath))
+#    img <- switch(ext,
+#                  "jpg"  = readJPEG(input$image$datapath),
+#                  "jpeg" = readJPEG(input$image$datapath),
+#                  "png"  = readPNG(input$image$datapath),
+#                  stop("Unsupported image format") # Error for other types
+#                 )
+#    # Update reactive values
+#    img_data(img)
+#    orig_dims(dim(img)[1:2]) # Store only height and width
+#  })
+```
+### 3.3 ASCII Generation
+ - Purpose: 'ascii_lines' defines a reactive expression. This code block automatically re-executes whenever any reactive values or inputs it depends on change. Its result is cached and only recalculated when necessary.
+ - Logic: 
+  1. Grayscale Conversion: Converts the input image 'img_data()' to grayscale using the standard luminosity forumula if it is a color image.
+  2. Dimension Calculation: Calculates the target width and height for the ASCII art based on 'input$max_width', the original image aspect ratio 'orig_dims', and a predefined character aspect ratio 'char_aspect_ratio' to compensate for non-square characters in text.
+  3. Downsampling: Reduces the resolution of the grayscale image to the calculated target dimensions using nearest-neighbor sampling.
+  4. ASCII Mapping: Defines a set of ASCII characters 'chars' ordered by perceived visual density. It then iterates through each row of downsampled grayscale image, mapping ech pixel's brightness value to an index in the 'chars' vector. The characters corresponding to these indicies are combined to form ASCII lines.
+- Output: Returns a character vector, where each element is one line of the final ASCII art.
+```{r}
+# Reactive Expression: Generates ASCII art whenever inputs/data change
+#  ascii_lines <- reactive({
+#    req(img_data()) # Require image data
+#    img <- img_data()
+#    od <- orig_dims() # Get original dimensions
+#
+#    # --- Convert to Grayscale ---
+#    if (length(dim(img)) == 3) {
+#      gray <- 0.3 * img[,,1] + 0.59 * img[,,2] + 0.11 * img[,,3]
+#    } else {
+#      gray <- img # Assume already grayscale
+#    }
+#
+#    # --- Calculate Target Dimensions ---
+#    char_aspect_ratio <- 2.2
+#    target_width <- min(input$max_width, ncol(gray))
+#    # Check if original dimensions are valid before calculating aspect ratio
+#    if(is.null(od) || length(od) != 2 || od[2] == 0) {
+#        # Handle cases where dimensions aren't set or width is zero
+#        # Default aspect ratio or stop? Let's default to 1 if invalid.
+#        original_aspect_ratio <- 1
+#    } else {
+#       original_aspect_ratio <- od[1] / od[2] # height / width
+#    }
+#    target_height <- round(target_width * original_aspect_ratio / char_aspect_ratio)
+#    target_width <- max(10, target_width) # Enforce min dimensions
+#    target_height <- max(10, target_height)
+#
+    # --- Downsample Image ---
+#    row_indices <- round(seq(1, nrow(gray), length.out = target_height))
+#    col_indices <- round(seq(1, ncol(gray), length.out = target_width))
+#    gray_small <- gray[row_indices, col_indices, drop = FALSE]
+#
+#    # --- Map Grayscale to ASCII Characters ---
+#    # Darkest to lightest in original code's mapping context
+#    chars <- c("@", "#", "S", "%", "?", "*", "+", ";", ":", ",", ".")
+#    ascii <- apply(gray_small, 1, function(row) {
+#      # Map value [0,1] to index [1, length(chars)]
+#      char_indices <- pmin(pmax(round(row * (length(chars)-1)) + 1, 1), length(chars))
+#      paste(chars[char_indices], collapse = "")
+#    })
+#
+#    ascii # Return the vector of ASCII lines
+#  })
+```
+### 3.4 UI Rendering 'renderUI'
+  - Purpose: 'output$ascii_display' defines how to generate the HTML content for 'htmlOutput' element in the UI. 'renderUI' is used when the UI structure itself needs to be created dynamically.
+  - Logic
+    1. Retreives the result from the 'ascii_lines()' reactive expression.
+    2. Combines the vector of the ASCII lines into a single string separated by newline characters.
+    3. Defines CSS styles for the output, including using a monospace font, setting the font size based on 'input$fontsize', preserving whitespace, and enabling scrolling.
+    4. Creates an HTML 'div' tag containing the styled ASCII text.
+```{r}
+# Render UI: Dynamically creates the HTML to display the ASCII art
+#  output$ascii_display <- renderUI({
+#    ascii <- ascii_lines() # Get the ASCII result
+#    req(ascii) # Ensure it exists
+#    ascii_text <- paste(ascii, collapse = "\n")
+#
+#    # Define CSS styling for the output DIV
+#    style <- paste0(
+#      "font-family: monospace; font-size: ", input$fontsize, "px; ",
+#      "white-space: pre; overflow: auto; max-height: 600px; line-height: 1;"
+#    )
+#
+#    # Return an HTML div element
+#    div(style = style, ascii_text)
+#  })
+```
+### 3.5 Download Handling 'downloadHandler'
+  - Purpose: output$downloadFile' defines the behavior when the user clicks the 'downloadButton' in the UI. It consists of two parts: 'filename' and 'content'.
+  - 'filename' function: Determines the name that the downloaded file should have. It checks the value of 'input$save_format' and constructs a filename like 'ascii_output.txt'.
+  - 'content; function: Generates the actual content of the file to be downloaded. The function receives a 'file' argument, which is a temporary path where the content should be written.
+```{r}
+# Download Handler: Defines what happens when download button is clicked
+#  output$downloadFile <- downloadHandler(
+#    # --- 1. Define the filename ---
+#    filename = function() {
+#      paste0("ascii_output",
+#            switch(input$save_format,
+#                   "Text (.txt)" = ".txt",
+#                   "Image (.png)" = ".png",
+#                    "Image (.jpeg)" = ".jpeg",
+#                    ".txt") # Default extension
+#            )
+#    },
+#    # --- 2. Generate the file content ---
+#    content = function(file) { # 'file' is the path provided by Shiny to write to
+#      ascii <- ascii_lines() # Get ASCII result
+#      req(ascii)
+#
+#      # --- Save as Text ---
+#      if (input$save_format == "Text (.txt)") {
+#       writeLines(ascii, file)
+#      }
+#     # --- Save as Image ---
+#      else {
+#        ext <- ifelse(input$save_format == "Image (.png)", "png", "jpeg")
+#
+#        # Calculate image dimensions for rendering
+#        char_aspect_ratio <- 2.2
+#        n_lines <- length(ascii)
+#        max_chars <- if (n_lines > 0) max(nchar(ascii)) else 0
+#       char_width <- 10
+#        char_height <- char_width * char_aspect_ratio
+#        padding <- 20
+#        width_px <- max_chars * char_width + (2 * padding)
+#        height_px <- n_lines * char_height + (2 * padding)
+#
+#        # Open graphics device
+#        if (ext == "png") {
+#          png(file, width = width_px, height = height_px, units = "px", res = 96)
+#        } else {
+#          jpeg(file, width = width_px, height = height_px, units = "px", res = 96, quality = 90)
+#        }
+#
+        # Plot the ASCII text onto the device
+#        par(mar = c(0, 0, 0, 0), bg = "white") # Set margins/background
+#        plot.new() # Create blank plot
+#        plot.window(xlim = c(0, 1), ylim = c(0, 1)) # Set coordinate system
+#        # Draw text, centered, using monospace font
+#        text(0.5, 0.5, paste(ascii, collapse = "\n"), family = "mono", adj = c(0.5, 0.5))
+#
+#        dev.off() # Close device (writes file)
+#      }
+#    }
+#  ) # End downloadHandler
+```
+## 4. Run Application 'shinyApp'
+This is the final command in the script.
+  - Purpose: 'shinyApp' takes the defined 'ui' object and 'server' function and launches the Shiny web application.
+```{r}
+# --- Run the Application ---
+# This command launches the Shiny app using the defined UI and Server
+# shinyApp(ui = ui, server = server)
+```
