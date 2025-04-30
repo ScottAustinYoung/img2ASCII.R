@@ -7,24 +7,24 @@
 # === 1. Package Management ===
 # This section ensures that all required packages are installed and loaded.
 ## --- Define Required Packages ---
-required_packages <- c(
+# required_packages <- c(
   "shiny",
   "jpeg",
   "png"
 )
 ## --- Install and Load Packages ---
 # Utilizes a loop through the list of packages.
-for (pkg in required_packages) {
-  # Check whether the packages are already installed.
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    # If not installed, prints a message and installs it.
-    message(paste("Installing package:", pkg))
-    install.packages(pkg)
-  }
-  # Loads the package into the current session.
-  library(pkg, character.only = TRUE)
-  message(paste("Package loaded:", pkg))
-}
+# for (pkg in required_packages) {
+#  # Check whether the packages are already installed.
+#  if (!requireNamespace(pkg, quietly = TRUE)) {
+#    # If not installed, prints a message and installs it.
+#    message(paste("Installing package:", pkg))
+#    install.packages(pkg)
+#  }
+#  # Loads the package into the current session.
+#  library(pkg, character.only = TRUE)
+#  message(paste("Package loaded:", pkg))
+# }
 
 # === 2. User Interface Definition ===
 # This section defines the layout and appearance of the ShinyApp UI.

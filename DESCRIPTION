@@ -1,20 +1,12 @@
 Package: img2ASCII
-Type: Package
-Title: Converts an image to ASCII art.
+Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
-Authors@R: c(
-    person(
-      "Scott", "Young",
-      email = "scottaustinyoung@gmail.com",
-      role = c("aut", "cre")
-    )
-  )
-Description: A simple package that converts an image to ASCII art. Import the
-  package, then call the function and your chosen image. Then, write your new
-    image filename for ASCII art. It will generate both a .txt file and an
-      image based on your file.
-Depends: false
-Imports: false
-License: CC0
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    shiny
