@@ -1,9 +1,9 @@
 Package: img2ASCII
-Title: What the Package Does (One Line, Title Case)
+Title: Images to ASCII Conversion
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Scott", "Young", , "scottaustinyoung@gmail.com.com", role = c("aut", "cre"))
+Description: This package takes an input of either a jpg or png, and converts it into an ASCII character array.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
